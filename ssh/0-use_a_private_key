@@ -1,0 +1,3 @@
+#!/bin/bash
+# Connect to my ubuntu server using SSH with specific key
+ssh -i ~/.ssh/school ubuntu@your-server
