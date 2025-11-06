@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Script to install and configure Nginx on Ubuntu
+# Requirements:
+# - Nginx listening on port 80
+# - Root page contains the string "Holberton School"
+# - Must not use systemctl to restart nginx
+
+# Exit immediately if a command fails
+set -e
+
+# Update package lists
+sudo apt-get update -y
+
+# Install Nginx
+sudo apt-get install -y nginx
+
+# Ensure Nginx is listening on port 80 (default config already does)
+# Just overwrite the default index.html to contain "Holberton School"
+echo "Holberton School" | sudo tee /var/www/html/index.nginx-debian.html > /dev/null
+
+# Restart Nginx without using systemctl
+sudo service nginx restart
+
+# Verify installation
+curl -s http://localhost/ | grep "Holberton School" && echo "✅ Nginx is configured correctly."
