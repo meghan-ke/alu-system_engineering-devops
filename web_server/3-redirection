@@ -1,5 +1,4 @@
 #!/usr/bin/env bash
-
 # 3-redirection - Configure Nginx redirect for /redirect_me
 
 # Update package list and install Nginx if not already installed
