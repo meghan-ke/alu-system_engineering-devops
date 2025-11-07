@@ -1,0 +1,41 @@
+#!/bin/env bash
+
+# 3-redirection - Configure Nginx redirect for /redirect_me
+
+# Update package list and install Nginx if not already installed
+sudo apt-get update
+sudo apt-get install -y nginx
+
+# Start and enable Nginx service
+sudo systemctl start nginx
+sudo systemctl enable nginx
+
+# Create the Nginx configuration file with the redirect
+sudo tee /etc/nginx/sites-available/default > /dev/null <<EOF
+server {
+    listen 80 default_server;
+    listen [::]:80 default_server;
+
+    root /var/www/html;
+    index index.html index.htm index.nginx-debian.html;
+
+    server_name _;
+
+    location / {
+        try_files \$uri \$uri/ =404;
+    }
+
+    location /redirect_me {
+        return 301 https://www.example.com/new_page;
+    }
+}
+EOF
+
+# Test the Nginx configuration
+sudo nginx -t
+
+# Reload Nginx to apply the changes
+sudo systemctl reload nginx
+
+# Display status of Nginx service
+sudo systemctl status nginx
