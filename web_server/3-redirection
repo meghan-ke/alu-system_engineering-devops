@@ -1,93 +1,29 @@
 #!/usr/bin/env bash
-# 3-redirection - Configure Nginx redirect for /redirect_me
-
-# Update package list and install Nginx if not already installed
-sudo apt-get update
+#Configure your Nginx server so that /redirect_me is redirecting to another page
+sudo apt-get update -y
 sudo apt-get install -y nginx
 
-# Start and enable Nginx service
-sudo systemctl start nginx
-sudo systemctl enable nginx
+sudo mkdir /etc/nginx/html
+sudo touch /etc/nginx/html/index.html
 
-# Create the Nginx configuration file with the redirect
-sudo tee /etc/nginx/sites-available/default > /dev/null <<EOF
-server {
-    listen 80 default_server;
-    listen [::]:80 default_server;
-
-    root /var/www/html;
-    index index.html index.htm index.nginx-debian.html;
-
-    server_name _;
-
-    location / {
-        try_files \$uri \$uri/ =404;
-    }
-
-    location /redirect_me {
-        return 301 https://www.example.com/new_page;
-    }
+#sudo ufw allow 'Nginx HTTP'
+config=\
+"server {
+        listen 80 default_server;
+        listen [::]:80 default_server;
+	root /var/www/html;
+	index index.html index.htm index.nginx-debian.html;
+	server_name _;
+	location / {
+		try_files \$uri \$uri/ =404;
+        }
+	location /redirect_me {
+		return 301 https://www.youtube.com/watch?v=QH2-TGUlwu4;
+	}
 }
-EOF
-
-# Test the Nginx configuration
-echo "Testing Nginx configuration..."
-if sudo nginx -t; then
-    echo "✓ Nginx configuration test passed"
-else
-    echo "✗ Nginx configuration test failed"
-    exit 1
-fi
-
-# Reload Nginx to apply the changes
-echo "Reloading Nginx..."
-sudo systemctl reload nginx
-
-# Verify the redirect is working
-echo "Verifying the redirect configuration..."
-
-# Create a test HTML file to ensure server is running
-sudo tee /var/www/html/index.html > /dev/null <<EOF
-<html>
-<body>
-<h1>Hello World!</h1>
-<p>Nginx is running. Test the redirect at <a href="/redirect_me">/redirect_me</a></p>
-</body>
-</html>
-EOF
-
-# Wait a moment for Nginx to fully reload
-sleep 2
-
-# Test the redirect using curl
-echo "Testing /redirect_me endpoint..."
-RESPONSE=$(curl -s -I http://localhost/redirect_me | head -n 1 | tr -d '\r')
-
-# Verify it returns "301 Moved Permanently"
-if echo "$RESPONSE" | grep -q "301 Moved Permanently"; then
-    echo "✓ SUCCESS: /redirect_me returns '301 Moved Permanently'"
-    echo "  Response: $RESPONSE"
-else
-    echo "✗ FAILED: /redirect_me does not return 301"
-    echo "  Actual response: $RESPONSE"
-    exit 1
-fi
-
-# Additional verification - check the Location header
-LOCATION_HEADER=$(curl -s -I http://localhost/redirect_me | grep -i "Location:" | tr -d '\r')
-if [ -n "$LOCATION_HEADER" ]; then
-    echo "✓ Redirect location header: $LOCATION_HEADER"
-else
-    echo "✗ No Location header found in redirect response"
-    exit 1
-fi
-
-# Final status check
-echo "Final Nginx status:"
-sudo systemctl status nginx --no-pager -l
-
-echo ""
-echo "✅ Configuration complete! The server is now properly configured:"
-echo "   - /redirect_me returns '301 Moved Permanently'"
-echo "   - Redirects to: https://www.example.com/new_page"
-echo "   - Nginx is running and enabled"
+"
+sudo chown -R "$USER":"$USER" /var/www/html/index.html
+sudo chown -R "$USER":"$USER" /etc/nginx/sites-available/default
+echo "Holberton School" > /var/www/html/index.html
+echo "$config" > /etc/nginx/sites-available/default
+sudo service nginx restart
