@@ -1,0 +1,41 @@
+#!/usr/bin/env bash
+# Install and configure HAProxy load balancer
+# Author: Meghan
+# This script installs HAProxy and configures it to distribute traffic between two backend servers using roundrobin
+
+# Update and install haproxy
+sudo apt update -y
+sudo apt install haproxy -y
+
+# Enable HAProxy to start on boot
+sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
+
+# Create the HAProxy configuration
+sudo bash -c 'cat > /etc/haproxy/haproxy.cfg <<EOF
+global
+    log /dev/log    local0
+    log /dev/log    local1 notice
+    daemon
+
+defaults
+    log     global
+    mode    http
+    option  httplog
+    option  dontlognull
+    timeout connect 5000
+    timeout client  50000
+    timeout server  50000
+
+frontend http_front
+    bind *:80
+    default_backend web_backends
+
+backend web_backends
+    balance roundrobin
+    server meghan-ke-web-01 <WEB01_PRIVATE_IP>:80 check
+    server meghan-ke-web-02 <WEB02_PRIVATE_IP>:80 check
+EOF'
+
+# Restart HAProxy
+sudo service haproxy restart
+
