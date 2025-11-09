@@ -1,20 +1,21 @@
 #!/usr/bin/env bash
-# Install and configure HAProxy load balancer
-# Author: Meghan
-# This script installs HAProxy and configures it to distribute traffic between two backend servers using roundrobin
+# Installs and configures HAProxy load balancer with roundrobin distribution
 
-# Update and install haproxy
-sudo apt update -y
-sudo apt install haproxy -y
+apt-get update -y
+apt-get install -y haproxy
 
-# Enable HAProxy to start on boot
-sudo sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy
+# Enable HAProxy service in init system
+sed -i 's/ENABLED=0/ENABLED=1/' /etc/default/haproxy || echo "ENABLED=1" >> /etc/default/haproxy
 
-# Create the HAProxy configuration
-sudo bash -c 'cat > /etc/haproxy/haproxy.cfg <<EOF
-global
-    log /dev/log    local0
-    log /dev/log    local1 notice
+# Configure HAProxy to balance between web-01 and web-02
+cat <<EOF | sudo tee /etc/haproxy/haproxy.cfg > /dev/null
+global 
+    log /dev/log local0
+    log /dev/log local1 notice
+    chroot /var/lib/haproxy
+    stats timeout 30s
+    user haproxy
+    group haproxy
     daemon
 
 defaults
@@ -25,17 +26,23 @@ defaults
     timeout connect 5000
     timeout client  50000
     timeout server  50000
+    errorfile 400 /etc/haproxy/errors/400.http
+    errorfile 403 /etc/haproxy/errors/403.http
+    errorfile 408 /etc/haproxy/errors/408.http
+    errorfile 500 /etc/haproxy/errors/500.http
+    errorfile 502 /etc/haproxy/errors/502.http
+    errorfile 503 /etc/haproxy/errors/503.http
+    errorfile 504 /etc/haproxy/errors/504.http
 
 frontend http_front
     bind *:80
-    default_backend web_backends
+    default_backend http_back
 
-backend web_backends
+backend http_back
     balance roundrobin
-    server meghan-ke-web-01 <WEB01_PRIVATE_IP>:80 check
-    server meghan-ke-web-02 <WEB02_PRIVATE_IP>:80 check
-EOF'
+    server web-01 3.84.154.90:80 check
+    server 6845-web-02 3.86.24.119:80 check
+EOF
 
-# Restart HAProxy
-sudo service haproxy restart
-
+# Restart HAProxy to apply configuration
+service haproxy start
